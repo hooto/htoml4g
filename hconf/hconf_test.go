@@ -102,7 +102,7 @@ func Benchmark_Toml_Decode(b *testing.B) {
 
 func Benchmark_Toml_Encode(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		bs, err := Encode(&objRaw)
+		bs, err := Encode(&objRaw, nil)
 		if err != nil || len(bs) < 100 {
 			//
 		}

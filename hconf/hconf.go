@@ -28,6 +28,10 @@ const (
 	Version = "0.9.0"
 )
 
+type EncodeOptions struct {
+	Indent string
+}
+
 func Decode(obj interface{}, bs []byte) error {
 
 	if _, err := toml.Decode(string(bs), obj); err != nil {
@@ -57,15 +61,15 @@ func DecodeFromFile(obj interface{}, file string) error {
 	return nil
 }
 
-func Encode(obj interface{}) ([]byte, error) {
+func Encode(obj interface{}, opts *EncodeOptions) ([]byte, error) {
 	var buf bytes.Buffer
-	if err := prettyEncode(obj, &buf); err != nil {
+	if err := prettyEncode(obj, &buf, opts); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
 }
 
-func EncodeToFile(obj interface{}, file string) error {
+func EncodeToFile(obj interface{}, file string, opts *EncodeOptions) error {
 
 	fpo, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
@@ -78,7 +82,7 @@ func EncodeToFile(obj interface{}, file string) error {
 
 	var wbuf = bufio.NewWriter(fpo)
 
-	err = prettyEncode(obj, wbuf)
+	err = prettyEncode(obj, wbuf, opts)
 	if err != nil {
 		return err
 	}
@@ -86,12 +90,16 @@ func EncodeToFile(obj interface{}, file string) error {
 	return wbuf.Flush()
 }
 
-func prettyEncode(obj interface{}, bufOut io.Writer) error {
+func prettyEncode(obj interface{}, bufOut io.Writer, opts *EncodeOptions) error {
 
 	var (
 		buf bytes.Buffer
 		enc = toml.NewEncoder(&buf)
 	)
+
+	if opts != nil {
+		enc.Indent = opts.Indent
+	}
 
 	if err := enc.Encode(obj); err != nil {
 		return err
@@ -104,7 +112,8 @@ func prettyEncode(obj interface{}, bufOut io.Writer) error {
 			break
 		}
 
-		if len(line) > 80 && line[len(line)-2] == '"' && line[len(line)-3] != '"' {
+		if len(line) > 8 && line[len(line)-2] == '"' && line[len(line)-3] != '"' &&
+			bytes.IndexByte(line, '\n') > 2 {
 
 			if n := bytes.Index(line, []byte(" = \"")); n > 0 {
 				if nb := bytes.Index(line[n+4:len(line)-2], []byte("\\n")); nb >= 0 {

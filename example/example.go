@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/hooto/hconf4g/hconf"
+	"github.com/hooto/htoml4g/htoml"
 )
 
 type ConfigEntry struct {
@@ -34,7 +34,7 @@ conn_max = 100
 func main() {
 
 	var item ConfigEntry
-	if err := hconf.Decode(&item, confRaw); err != nil {
+	if err := htoml.Decode(&item, confRaw); err != nil {
 		panic(err)
 	}
 

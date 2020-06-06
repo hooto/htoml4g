@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package hconf
+package htoml
 
 import (
 	"bufio"
@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	Version = "0.9.0"
+	Version = "0.9.1"
 )
 
 type EncodeOptions struct {

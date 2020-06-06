@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package hconf
+package htoml
 
 func bytesClone(src []byte) []byte {
 	dst := make([]byte, len(src))

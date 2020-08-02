@@ -1,4 +1,4 @@
-// Copyright 2019 Eryx <evorui аt gmаil dοt cοm>, All rights reserved.
+// Copyright 2019 Eryx <evorui аt gmail dοt com>, All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,7 +21,15 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
+)
+
+var (
+	nameRes = []*regexp.Regexp{
+		regexp.MustCompile(`,name=(.*?),`),
+		regexp.MustCompile(`protobuf_oneof:"(.*?)"`),
+	}
 )
 
 func main() {
@@ -45,12 +53,12 @@ func main() {
 			}
 		}
 	}
-	fmt.Println(files)
 
 	for _, file := range files {
 		if err := filter(file); err != nil {
 			log.Fatal(err)
 		}
+		fmt.Println("  ok", file)
 	}
 }
 
@@ -74,8 +82,35 @@ func filter(f string) error {
 			break
 		}
 
+		nameHit := func(v string) string {
+			for _, nameRe := range nameRes {
+				if mat := nameRe.FindAllStringSubmatch(v, 1); len(mat) > 0 {
+					return mat[0][1]
+				}
+			}
+			return ""
+		}
+
 		if n1 := bytes.IndexByte(line, '`'); n1 > 0 {
 			if n2 := bytes.Index(line, []byte("toml:\"")); n2 <= n1 {
+
+				if fieldName := nameHit(string(line[n1:])); fieldName != "" {
+
+					for _, s := range []string{
+						"protobuf_oneof:\"",
+						"proto3,oneof",
+					} {
+						if nj1 := bytes.Index(line, []byte(s)); nj1 > n1 {
+							if tl := bytes.IndexByte(line[nj1+len(s):], '"'); tl >= 0 {
+								line = []byte(string(line[:nj1+len(s)+1+tl]) +
+									" json:\"" + fieldName + "\"" +
+									string(line[nj1+len(s)+1+tl:]))
+								chg = true
+							}
+						}
+					}
+				}
+
 				if nj1 := bytes.Index(line, []byte("json:\"")); nj1 > n1 {
 					if tl := bytes.IndexByte(line[nj1+6:], '"'); tl > 0 {
 						line = []byte(string(line[:nj1+7+tl]) +

@@ -21,11 +21,11 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/BurntSushi/toml"
+	"github.com/hooto/htoml4g/internal/toml" // fork from "github.com/BurntSushi/toml"
 )
 
 const (
-	Version = "0.9.1"
+	Version = "0.9.2"
 )
 
 type EncodeOptions struct {

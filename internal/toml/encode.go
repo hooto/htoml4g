@@ -499,7 +499,7 @@ func getOptions(tag reflect.StructTag) tagOptions {
 			opts.omitzero = true
 		}
 	}
-	if c := strings.TrimSpace(tag.Get("comment")); c != "" {
+	if c := strings.TrimSpace(tag.Get("desc")); c != "" {
 		opts.comment = c
 	}
 	return opts

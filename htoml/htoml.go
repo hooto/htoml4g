@@ -71,7 +71,7 @@ func Encode(obj interface{}, opts *EncodeOptions) ([]byte, error) {
 
 func EncodeToFile(obj interface{}, file string, opts *EncodeOptions) error {
 
-	fpo, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE, 0644)
+	fpo, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE, 0640)
 	if err != nil {
 		return err
 	}

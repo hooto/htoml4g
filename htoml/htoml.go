@@ -118,9 +118,9 @@ func prettyEncode(obj interface{}, bufOut io.Writer, opts *EncodeOptions) error 
 			if n := bytes.Index(line, []byte(" = \"")); n > 0 {
 				if nb := bytes.Index(line[n+4:len(line)-2], []byte("\\n")); nb >= 0 {
 					bufOut.Write(line[:n+4])
-					bufOut.Write([]byte(`""`))
+					bufOut.Write([]byte("\"\"\n"))
 					bufOut.Write(bytes.Replace(line[n+4:len(line)-2], []byte("\\n"), []byte("\n"), -1))
-					bufOut.Write([]byte("\"\"\"\n"))
+					bufOut.Write([]byte("\n\"\"\"\n"))
 					continue
 				}
 			}

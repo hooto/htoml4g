@@ -28,8 +28,19 @@ const (
 	Version = "0.9.2"
 )
 
+type Key = toml.Key
+
+type EncodeOptionIndent string
+
+type EncodeOptionFilter = toml.EncodeOptionFilter
+
 type EncodeOptions struct {
-	Indent string
+	Indent  string
+	Filters []EncodeOptionFilter
+}
+
+func NewEncodeOptions() *EncodeOptions {
+	return &EncodeOptions{Indent: "  "}
 }
 
 func Decode(obj interface{}, bs []byte) error {
@@ -61,15 +72,37 @@ func DecodeFromFile(obj interface{}, file string) error {
 	return nil
 }
 
-func Encode(obj interface{}, opts *EncodeOptions) ([]byte, error) {
+func encodeOptionsParse(args ...interface{}) *EncodeOptions {
+	opts := NewEncodeOptions()
+	for _, arg := range args {
+		switch arg.(type) {
+		case EncodeOptions:
+			o := arg.(EncodeOptions)
+			opts = &o
+
+		case *EncodeOptions:
+			opts = arg.(*EncodeOptions)
+
+		case EncodeOptionFilter:
+			opts.Filters = append(opts.Filters, arg.(EncodeOptionFilter))
+
+		case EncodeOptionIndent:
+			opts.Indent = string(arg.(EncodeOptionIndent))
+		}
+	}
+	return opts
+}
+
+func Encode(obj interface{}, args ...interface{}) ([]byte, error) {
+
 	var buf bytes.Buffer
-	if err := prettyEncode(obj, &buf, opts); err != nil {
+	if err := prettyEncode(obj, &buf, encodeOptionsParse(args...)); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
 }
 
-func EncodeToFile(obj interface{}, file string, opts *EncodeOptions) error {
+func EncodeToFile(obj interface{}, file string, args ...interface{}) error {
 
 	fpo, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE, 0640)
 	if err != nil {
@@ -82,7 +115,7 @@ func EncodeToFile(obj interface{}, file string, opts *EncodeOptions) error {
 
 	var wbuf = bufio.NewWriter(fpo)
 
-	err = prettyEncode(obj, wbuf, opts)
+	err = prettyEncode(obj, wbuf, encodeOptionsParse(args...))
 	if err != nil {
 		return err
 	}
@@ -92,41 +125,15 @@ func EncodeToFile(obj interface{}, file string, opts *EncodeOptions) error {
 
 func prettyEncode(obj interface{}, bufOut io.Writer, opts *EncodeOptions) error {
 
-	var (
-		buf bytes.Buffer
-		enc = toml.NewEncoder(&buf)
-	)
+	enc := toml.NewEncoder(bufOut)
 
 	if opts != nil {
 		enc.Indent = opts.Indent
+		enc.Filters = opts.Filters
 	}
 
 	if err := enc.Encode(obj); err != nil {
 		return err
-	}
-
-	for {
-
-		line, err := buf.ReadBytes('\n')
-		if err != nil {
-			break
-		}
-
-		if len(line) > 8 && line[len(line)-2] == '"' && line[len(line)-3] != '"' &&
-			bytes.IndexByte(line, '\n') > 2 {
-
-			if n := bytes.Index(line, []byte(" = \"")); n > 0 {
-				if nb := bytes.Index(line[n+4:len(line)-2], []byte("\\n")); nb >= 0 {
-					bufOut.Write(line[:n+4])
-					bufOut.Write([]byte("\"\"\n"))
-					bufOut.Write(bytes.Replace(line[n+4:len(line)-2], []byte("\\n"), []byte("\n"), -1))
-					bufOut.Write([]byte("\n\"\"\"\n"))
-					continue
-				}
-			}
-		}
-
-		bufOut.Write(line)
 	}
 
 	return nil

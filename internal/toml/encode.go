@@ -38,6 +38,15 @@ var quotedReplacer = strings.NewReplacer(
 	"\\", "\\\\",
 )
 
+var quotedLongTextReplacer = strings.NewReplacer(
+	"\t", "\\t",
+	"\r", "\\r",
+	"\"", "\\\"",
+	"\\", "\\\\",
+)
+
+type EncodeOptionFilter func(key Key, rv reflect.Value) reflect.Value
+
 // Encoder controls the encoding of Go values to a TOML document to some
 // io.Writer.
 //
@@ -50,6 +59,8 @@ type Encoder struct {
 	hasWritten bool
 	w          *bufio.Writer
 	comments   map[string]string
+
+	Filters []EncodeOptionFilter
 }
 
 // NewEncoder returns a TOML encoder that encodes Go values to the io.Writer
@@ -207,7 +218,12 @@ func floatAddDecimal(fstr string) string {
 }
 
 func (enc *Encoder) writeQuoted(s string) {
-	enc.wf("\"%s\"", quotedReplacer.Replace(s))
+
+	if len(s) >= 120 && strings.IndexByte(s, '\n') > 0 {
+		enc.wf("\"\"\"%s\"\"\"\n", quotedLongTextReplacer.Replace(s))
+	} else {
+		enc.wf("\"%s\"", quotedReplacer.Replace(s))
+	}
 }
 
 func (enc *Encoder) eArrayOrSliceElement(rv reflect.Value) {
@@ -539,6 +555,9 @@ func (enc *Encoder) keyEqElement(key Key, val reflect.Value) {
 	}
 	panicIfInvalidKey(key)
 	enc.newComment(key)
+	for _, fr := range enc.Filters {
+		val = fr(key, val)
+	}
 	enc.wf("%s%s = ", enc.indentStr(key), key.maybeQuoted(len(key)-1))
 	enc.eElement(val)
 	enc.newline()

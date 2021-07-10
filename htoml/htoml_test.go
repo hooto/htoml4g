@@ -16,6 +16,7 @@ package htoml
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -29,7 +30,7 @@ type tomlConfig struct {
 
 type ownerInfo struct {
 	Name string
-	Org  string `json:"organization" toml:"organization"`
+	Org  string `json:"organization" toml:"organization" desc:"Org Description"`
 	Bio  string
 }
 
@@ -91,6 +92,15 @@ func init() {
 		panic(err)
 	}
 	objRaw = item
+}
+
+func Test_Toml_Desc(t *testing.T) {
+	bs, _ := Encode(&ownerInfo{
+		Org: "org",
+	}, nil)
+	if !strings.Contains(string(bs), "Org Description") {
+		t.Fatal("desc miss")
+	}
 }
 
 func Benchmark_Toml_Decode(b *testing.B) {

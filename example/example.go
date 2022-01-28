@@ -34,7 +34,7 @@ conn_max = 100
 func main() {
 
 	var item ConfigEntry
-	if err := htoml.Decode(&item, confRaw); err != nil {
+	if err := htoml.Decode(confRaw, &item); err != nil {
 		panic(err)
 	}
 

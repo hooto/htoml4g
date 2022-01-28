@@ -15,6 +15,7 @@
 package htoml
 
 import (
+	"bytes"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -39,6 +40,11 @@ type database struct {
 	Ports   []int
 	ConnMax int `json:"connection_max" toml:"connection_max"`
 	Enabled bool
+}
+
+type richStruct struct {
+	Name   string `toml:"name"`
+	Driver func(string) error
 }
 
 type server struct {
@@ -85,7 +91,7 @@ hosts = [
 
 func init() {
 	var item tomlConfig
-	if err = Decode(&item, tomlRaw); err != nil {
+	if err = Decode(tomlRaw, &item); err != nil {
 		panic(err)
 	}
 	if jsonRaw, err = json.Marshal(item); err != nil {
@@ -103,10 +109,30 @@ func Test_Toml_Desc(t *testing.T) {
 	}
 }
 
+func Test_Toml_Func(t *testing.T) {
+	obj := &richStruct{
+		Name: "org",
+		Driver: func(name string) error {
+			return nil
+		},
+	}
+	bs, _ := Encode(obj, nil)
+	if !strings.Contains(string(bs), "org") {
+		t.Fatalf("struct/func encode fail : %s", string(bs))
+	}
+
+	var obj2 richStruct
+	if err := Decode(bs, &obj2); err != nil {
+		t.Fatalf("struct/func decode fail : %s", err.Error())
+	} else if bs2, _ := Encode(obj2, nil); bytes.Compare(bs, bs2) != 0 {
+		t.Fatalf("struct/func decode/encode diff fail")
+	}
+}
+
 func Benchmark_Toml_Decode(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		var item tomlConfig
-		Decode(&item, tomlRaw)
+		Decode(tomlRaw, &item)
 	}
 }
 

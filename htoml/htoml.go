@@ -25,34 +25,31 @@ import (
 )
 
 const (
-	Version = "0.9.2"
+	Version = "0.9.3"
 )
 
-type Key = toml.Key
-
-type EncodeOptionIndent string
-
-type EncodeOptionFilter = toml.EncodeOptionFilter
-
+// EncodeOptions sets options such as indent.
 type EncodeOptions struct {
-	Indent  string
-	Filters []EncodeOptionFilter
+	Indent string
 }
 
+// NewEncodeOptions returns a new EncodeOptions with default values.
 func NewEncodeOptions() *EncodeOptions {
 	return &EncodeOptions{Indent: "  "}
 }
 
-func Decode(obj interface{}, bs []byte) error {
+// Decode parses the TOML-encoded data and stores the result in the value pointed to by v.
+func Decode(bs []byte, v interface{}) error {
 
-	if _, err := toml.Decode(string(bs), obj); err != nil {
+	if _, err := toml.Decode(string(bs), v); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func DecodeFromFile(obj interface{}, file string) error {
+// DecodeFromFile parses the TOML-encoded data from file and stores the result in the value pointed to by v.
+func DecodeFromFile(file string, v interface{}) error {
 
 	fp, err := os.Open(file)
 	if err != nil {
@@ -65,7 +62,7 @@ func DecodeFromFile(obj interface{}, file string) error {
 		return err
 	}
 
-	if _, err := toml.Decode(string(bs), obj); err != nil {
+	if _, err = toml.Decode(string(bs), v); err != nil {
 		return err
 	}
 
@@ -73,7 +70,7 @@ func DecodeFromFile(obj interface{}, file string) error {
 }
 
 func encodeOptionsParse(args ...interface{}) *EncodeOptions {
-	opts := NewEncodeOptions()
+	var opts *EncodeOptions
 	for _, arg := range args {
 		switch arg.(type) {
 		case EncodeOptions:
@@ -82,59 +79,48 @@ func encodeOptionsParse(args ...interface{}) *EncodeOptions {
 
 		case *EncodeOptions:
 			opts = arg.(*EncodeOptions)
-
-		case EncodeOptionFilter:
-			opts.Filters = append(opts.Filters, arg.(EncodeOptionFilter))
-
-		case EncodeOptionIndent:
-			opts.Indent = string(arg.(EncodeOptionIndent))
 		}
+	}
+	if opts == nil {
+		opts = NewEncodeOptions()
 	}
 	return opts
 }
 
-func Encode(obj interface{}, args ...interface{}) ([]byte, error) {
-
+// Encode returns the TOML encoding of v.
+func Encode(v interface{}, args ...interface{}) ([]byte, error) {
 	var buf bytes.Buffer
-	if err := prettyEncode(obj, &buf, encodeOptionsParse(args...)); err != nil {
+	if err := prettyEncode(v, &buf, encodeOptionsParse(args...)); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
 }
 
-func EncodeToFile(obj interface{}, file string, args ...interface{}) error {
+// EncodeToFile writes the TOML encoding to file.
+func EncodeToFile(v interface{}, file string, args ...interface{}) error {
 
-	fpo, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE, 0640)
+	fp, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE, 0640)
 	if err != nil {
 		return err
 	}
-	defer fpo.Close()
+	defer fp.Close()
 
-	fpo.Seek(0, 0)
-	fpo.Truncate(0)
+	fp.Seek(0, 0)
+	fp.Truncate(0)
 
-	var wbuf = bufio.NewWriter(fpo)
+	w := bufio.NewWriter(fp)
 
-	err = prettyEncode(obj, wbuf, encodeOptionsParse(args...))
-	if err != nil {
+	if err = prettyEncode(v, w, encodeOptionsParse(args...)); err != nil {
 		return err
 	}
 
-	return wbuf.Flush()
+	return w.Flush()
 }
 
-func prettyEncode(obj interface{}, bufOut io.Writer, opts *EncodeOptions) error {
-
-	enc := toml.NewEncoder(bufOut)
-
+func prettyEncode(v interface{}, w io.Writer, opts *EncodeOptions) error {
+	enc := toml.NewEncoder(w)
 	if opts != nil {
 		enc.Indent = opts.Indent
-		enc.Filters = opts.Filters
 	}
-
-	if err := enc.Encode(obj); err != nil {
-		return err
-	}
-
-	return nil
+	return enc.Encode(v)
 }

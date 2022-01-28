@@ -69,8 +69,6 @@ var quotedLongTextReplacer = strings.NewReplacer(
 	"\\", "\\\\",
 )
 
-type EncodeOptionFilter func(key Key, rv reflect.Value) reflect.Value
-
 type Encoder struct {
 	// A single indentation level. By default it is two spaces.
 	Indent string
@@ -79,8 +77,6 @@ type Encoder struct {
 	hasWritten bool
 	w          *bufio.Writer
 	comments   map[string]string
-
-	Filters []EncodeOptionFilter
 }
 
 // NewEncoder returns a TOML encoder that encodes Go values to the io.Writer
@@ -187,6 +183,8 @@ func (enc *Encoder) encode(key Key, rv reflect.Value) {
 		enc.encode(key, rv.Elem())
 	case reflect.Struct:
 		enc.eTable(key, rv)
+	case reflect.Func:
+		// ignore ...
 	default:
 		encPanic(fmt.Errorf("unsupported type for key '%s': %s", key, k))
 	}
@@ -253,6 +251,8 @@ func (enc *Encoder) eElement(rv reflect.Value) {
 		enc.eArrayOrSliceElement(rv)
 	case reflect.Struct:
 		enc.eStruct(nil, rv, true)
+	case reflect.Func:
+		// ignore ...
 	case reflect.Map:
 		enc.eMap(nil, rv, true)
 	case reflect.Interface:
@@ -543,6 +543,8 @@ func tomlTypeOfGo(rv reflect.Value) tomlType {
 			}
 			return tomlHash
 		}
+	case reflect.Func:
+		return tomlFunc
 	default:
 		_, ok := rv.Interface().(encoding.TextMarshaler)
 		if ok {
@@ -646,9 +648,6 @@ func (enc *Encoder) writeKeyValue(key Key, val reflect.Value, inline bool) {
 		encPanic(errNoKey)
 	}
 	enc.newComment(key)
-	for _, fr := range enc.Filters {
-		val = fr(key, val)
-	}
 	enc.wf("%s%s = ", enc.indentStr(key), key.maybeQuoted(len(key)-1))
 	enc.eElement(val)
 	if !inline {

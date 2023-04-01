@@ -9,6 +9,7 @@ import (
 type ConfigEntry struct {
 	Title     string           `toml:"title"`
 	Databases []ConfigDatabase `toml:"databases"`
+	Attrs     []string         `toml:"attrs"`
 }
 
 type ConfigDatabase struct {
@@ -20,6 +21,7 @@ var (
 	confRaw = []byte(`
 # comment of example
 title = "TOML Example"
+attrs = ["0000", "1111", "2222", "3333", "4444", "5555", "6666", "7777", "8888", "9999"]
 
 [[databases]]
 addr = "192.168.0.1:3001"
@@ -43,5 +45,9 @@ func main() {
 	for i, v := range item.Databases {
 		fmt.Printf("  database #%d, addr %s, conn_max %d\n",
 			i, v.Addr, v.ConnMax)
+	}
+
+	if b, err := htoml.Encode(item); err == nil {
+		fmt.Println("encode", string(b))
 	}
 }

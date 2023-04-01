@@ -285,10 +285,16 @@ func (enc *Encoder) eArrayOrSliceElement(rv reflect.Value) {
 	enc.wf("[")
 	for i := 0; i < length; i++ {
 		elem := rv.Index(i)
+		if length > 6 {
+			enc.wf("\n  ")
+		}
 		enc.eElement(elem)
 		if i != length-1 {
 			enc.wf(", ")
 		}
+	}
+	if length > 6 {
+		enc.wf("\n")
 	}
 	enc.wf("]")
 }
@@ -640,7 +646,7 @@ func (enc *Encoder) newline() {
 
 // Write a key/value pair:
 //
-//   key = <any value>
+//	key = <any value>
 //
 // If inline is true it won't add a newline at the end.
 func (enc *Encoder) writeKeyValue(key Key, val reflect.Value, inline bool) {

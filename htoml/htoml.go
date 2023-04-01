@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	Version = "0.9.3"
+	Version = "0.9.4"
 )
 
 // EncodeOptions sets options such as indent.
@@ -35,7 +35,7 @@ type EncodeOptions struct {
 
 // NewEncodeOptions returns a new EncodeOptions with default values.
 func NewEncodeOptions() *EncodeOptions {
-	return &EncodeOptions{Indent: "  "}
+	return &EncodeOptions{Indent: ""}
 }
 
 // Decode parses the TOML-encoded data and stores the result in the value pointed to by v.

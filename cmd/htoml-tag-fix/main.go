@@ -39,17 +39,19 @@ func main() {
 	}
 
 	files := []string{}
-	if strings.HasSuffix(os.Args[1], ".go") {
-		files = append(files, os.Args[1])
-	} else {
-		out, err := exec.Command("find", os.Args[1], "-type", "f", "-name", "*.go").Output()
-		if err != nil {
-			log.Fatal(err)
-		}
-		arr := strings.Split(string(out), "\n")
-		for _, v := range arr {
-			if strings.HasSuffix(v, ".go") {
-				files = append(files, v)
+	for _, v := range strings.Split(os.Args[1], ",") {
+		if strings.HasSuffix(v, ".go") {
+			files = append(files, v)
+		} else {
+			out, err := exec.Command("find", v, "-type", "f", "-name", "*.go").Output()
+			if err != nil {
+				log.Fatal(err)
+			}
+			arr := strings.Split(string(out), "\n")
+			for _, v := range arr {
+				if strings.HasSuffix(v, ".go") {
+					files = append(files, v)
+				}
 			}
 		}
 	}
@@ -115,6 +117,7 @@ func filter(f string) error {
 					if tl := bytes.IndexByte(line[nj1+6:], '"'); tl > 0 {
 						line = []byte(string(line[:nj1+7+tl]) +
 							" toml:\"" + string(line[nj1+6:nj1+6+tl]) + "\"" +
+							" yaml:\"" + string(line[nj1+6:nj1+6+tl]) + "\"" +
 							string(line[nj1+7+tl:]))
 						chg = true
 					}
